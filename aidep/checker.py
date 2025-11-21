@@ -82,13 +82,13 @@ class ConflictChecker:
         for pkg, spec in current.items():
             pkg_lower = pkg.lower()
             
-            # Extract version number if present
-            version_match = re.search(r'(\d+\.\d+\.\d+|\d+\.\d+)', spec)
+            # Extract version number if present (including alpha/beta/rc)
+            version_match = re.search(r'(\d+\.\d+\.\d+(?:[a-zA-Z]+\d*)?|\d+\.\d+)', spec)
             if not version_match:
                 # No specific version pinned, might be okay
                 continue
-            
-            current_version = version_match.group(1)
+
+            current_version = self._normalize_version(version_match.group(1))
             
             # Check against working versions
             if pkg_lower in working:
@@ -104,23 +104,62 @@ class ConflictChecker:
         
         return False
     
+    def _normalize_version(self, version: str) -> str:
+        """
+        Normalize version string to handle alpha/beta/rc versions.
+        Examples: 2.0.0rc1 -> 2.0.0-rc1, 1.5a1 -> 1.5.0-alpha1
+        """
+        # Handle short versions with suffixes (1.5a1 -> 1.5.0a1)
+        short_with_suffix = re.match(r'^(\d+\.\d+)([a-zA-Z]+\d*)$', version)
+        if short_with_suffix:
+            base, suffix = short_with_suffix.groups()
+            version = f"{base}.0{suffix}"
+
+        # Handle short versions (1.5 -> 1.5.0)
+        if re.match(r'^\d+\.\d+$', version):
+            version = version + '.0'
+
+        # Handle alpha/beta/rc suffixes
+        # Match patterns like: 2.0.0rc1, 1.5.0a1, 3.0.0beta2
+        match = re.match(r'^(\d+\.\d+\.\d+)([a-zA-Z]+)(\d*)$', version)
+        if match:
+            base, suffix, num = match.groups()
+            # Normalize suffix to lowercase
+            suffix_map = {
+                'a': 'alpha', 'alpha': 'alpha',
+                'b': 'beta', 'beta': 'beta',
+                'rc': 'rc', 'c': 'rc',
+            }
+            normalized_suffix = suffix_map.get(suffix.lower(), suffix.lower())
+            version = f"{base}-{normalized_suffix}{num}"
+
+        return version
+
     def _version_satisfies(self, version: str, spec: str) -> bool:
         """Check if version satisfies specification."""
         try:
+            version = self._normalize_version(version)
+
             # Handle exact version
             if '==' in spec:
-                spec_version = spec.replace('==', '').strip()
+                spec_version = self._normalize_version(spec.replace('==', '').strip())
                 return version == spec_version
-            
-            # Handle version ranges
+
+            # Handle version ranges using packaging library
             if '>=' in spec or '<' in spec or '>' in spec or '<=' in spec:
-                spec_set = SpecifierSet(spec)
-                return version in spec_set
-            
+                try:
+                    spec_set = SpecifierSet(spec)
+                    # Try with and without normalization
+                    version_obj = parse_version(version)
+                    return version_obj in spec_set
+                except Exception:
+                    # Fallback to string comparison
+                    return True
+
             # Handle x.x.x format
             if re.match(r'^\d+\.\d+', spec):
                 return version.startswith(spec.split('.')[0])
-            
+
             return True
         except Exception:
             return True

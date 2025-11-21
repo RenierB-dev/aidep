@@ -28,10 +28,11 @@ AI frameworks change fast. LangChain 0.3 breaks LlamaIndex 0.10. OpenAI SDK upda
 ## 🎯 Features
 
 - ✅ Scan requirements.txt for AI framework conflicts
-- ✅ Database of known LangChain/LlamaIndex/OpenAI incompatibilities
+- ✅ Database of 20+ known LangChain/LlamaIndex/OpenAI incompatibilities
 - ✅ Suggest working version combinations
 - ✅ Works with pip, uv, poetry, conda
-- ✅ AI-powered fix suggestions for edge cases
+- ✅ Handles alpha/beta/rc version parsing
+- ✅ Comprehensive test coverage
 
 ## 📦 Installation
 

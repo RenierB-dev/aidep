@@ -147,6 +147,137 @@ CONFLICTS = [
             "llama-index": "0.7.4"
         },
         "fix": "pip install langflow==0.5.0 'llama-index<0.7.5'"
+    },
+    {
+        "id": "transformers-torch-version",
+        "packages": ["transformers", "torch"],
+        "description": "Transformers 4.35+ requires PyTorch 2.0+, conflicts with older torch versions",
+        "severity": "high",
+        "working_versions": {
+            "transformers": "4.34.1",
+            "torch": "1.13.1"
+        },
+        "alternative": {
+            "transformers": ">=4.35.0",
+            "torch": ">=2.0.0"
+        },
+        "fix": "pip install transformers==4.34.1 torch==1.13.1\nOR upgrade both:\npip install transformers>=4.35.0 torch>=2.0.0"
+    },
+    {
+        "id": "chromadb-sqlite-version",
+        "packages": ["chromadb", "pysqlite3-binary"],
+        "description": "ChromaDB 0.4.0+ requires pysqlite3-binary on Linux, conflicts with system SQLite",
+        "severity": "medium",
+        "working_versions": {
+            "chromadb": ">=0.4.0",
+            "pysqlite3-binary": ">=0.5.0"
+        },
+        "fix": "pip install chromadb>=0.4.0 pysqlite3-binary>=0.5.0"
+    },
+    {
+        "id": "torch-cuda-version",
+        "packages": ["torch", "torchvision"],
+        "description": "PyTorch CUDA versions must match between torch and torchvision",
+        "severity": "critical",
+        "working_versions": {
+            "torch": "2.0.0+cu118",
+            "torchvision": "0.15.0+cu118"
+        },
+        "fix": "pip install torch==2.0.0+cu118 torchvision==0.15.0+cu118 --index-url https://download.pytorch.org/whl/cu118"
+    },
+    {
+        "id": "fastapi-pydantic-v2",
+        "packages": ["fastapi", "pydantic"],
+        "description": "FastAPI <0.100 incompatible with Pydantic V2 (2.0+)",
+        "severity": "high",
+        "working_versions": {
+            "fastapi": "0.95.2",
+            "pydantic": "1.10.13"
+        },
+        "alternative": {
+            "fastapi": ">=0.100.0",
+            "pydantic": ">=2.0.0"
+        },
+        "fix": "pip install fastapi==0.95.2 pydantic==1.10.13\nOR upgrade both:\npip install fastapi>=0.100.0 pydantic>=2.0.0"
+    },
+    {
+        "id": "pinecone-grpc-version",
+        "packages": ["pinecone-client", "grpcio"],
+        "description": "Pinecone client 2.x requires grpcio <1.60, conflicts with newer gRPC versions",
+        "severity": "medium",
+        "working_versions": {
+            "pinecone-client": ">=2.0.0,<3.0.0",
+            "grpcio": ">=1.50.0,<1.60.0"
+        },
+        "alternative": {
+            "pinecone-client": ">=3.0.0",
+            "grpcio": ">=1.60.0"
+        },
+        "fix": "pip install 'pinecone-client>=2.0.0,<3.0.0' 'grpcio>=1.50.0,<1.60.0'\nOR upgrade both:\npip install pinecone-client>=3.0.0 grpcio>=1.60.0"
+    },
+    {
+        "id": "sentence-transformers-torch",
+        "packages": ["sentence-transformers", "torch"],
+        "description": "Sentence-Transformers 2.3+ requires PyTorch 1.11+, incompatible with older versions",
+        "severity": "medium",
+        "working_versions": {
+            "sentence-transformers": ">=2.3.0",
+            "torch": ">=1.11.0"
+        },
+        "fix": "pip install sentence-transformers>=2.3.0 torch>=1.11.0"
+    },
+    {
+        "id": "haystack-transformers-version",
+        "packages": ["farm-haystack", "transformers"],
+        "description": "Haystack 1.x pins specific transformers versions, conflicts with newer releases",
+        "severity": "high",
+        "working_versions": {
+            "farm-haystack": "1.22.0",
+            "transformers": ">=4.34.0,<4.37.0"
+        },
+        "alternative": {
+            "farm-haystack": ">=2.0.0",
+            "transformers": ">=4.37.0"
+        },
+        "fix": "pip install farm-haystack==1.22.0 'transformers>=4.34.0,<4.37.0'\nOR upgrade both:\npip install farm-haystack>=2.0.0 transformers>=4.37.0"
+    },
+    {
+        "id": "autogen-openai-version",
+        "packages": ["pyautogen", "openai"],
+        "description": "AutoGen <0.2.0 incompatible with OpenAI SDK 1.0+",
+        "severity": "high",
+        "working_versions": {
+            "pyautogen": "0.1.14",
+            "openai": "0.28.1"
+        },
+        "alternative": {
+            "pyautogen": ">=0.2.0",
+            "openai": ">=1.0.0"
+        },
+        "fix": "pip install pyautogen==0.1.14 openai==0.28.1\nOR upgrade both:\npip install pyautogen>=0.2.0 openai>=1.0.0"
+    },
+    {
+        "id": "guidance-transformers-conflict",
+        "packages": ["guidance", "transformers"],
+        "description": "Microsoft Guidance 0.0.x has issues with transformers 4.35+ tokenizer changes",
+        "severity": "medium",
+        "working_versions": {
+            "guidance": ">=0.1.0",
+            "transformers": ">=4.35.0"
+        },
+        "fix": "pip install guidance>=0.1.0 transformers>=4.35.0"
+    },
+    {
+        "id": "weaviate-grpc-protobuf",
+        "packages": ["weaviate-client", "grpcio", "protobuf"],
+        "description": "Weaviate client 3.x requires specific gRPC and protobuf versions",
+        "severity": "medium",
+        "working_versions": {
+            "weaviate-client": ">=3.0.0",
+            "grpcio": ">=1.50.0",
+            "protobuf": ">=3.20.0,<5.0.0"
+        },
+        "fix": "pip install weaviate-client>=3.0.0 'grpcio>=1.50.0' 'protobuf>=3.20.0,<5.0.0'"
     }
 ]
 
