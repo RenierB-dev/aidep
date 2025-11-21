@@ -278,6 +278,106 @@ CONFLICTS = [
             "protobuf": ">=3.20.0,<5.0.0"
         },
         "fix": "pip install weaviate-client>=3.0.0 'grpcio>=1.50.0' 'protobuf>=3.20.0,<5.0.0'"
+    },
+    {
+        "id": "cuda-pytorch-version-alignment",
+        "packages": ["torch", "torchvision", "torchaudio"],
+        "description": "CUDA toolkit version must match PyTorch CUDA version. Mismatched versions cause runtime errors and model loading failures.",
+        "severity": "critical",
+        "working_versions": {
+            "torch": "2.0.0+cu118",
+            "torchvision": "0.15.0+cu118",
+            "torchaudio": "2.0.0+cu118"
+        },
+        "alternative": {
+            "torch": "2.1.0+cu121",
+            "torchvision": "0.16.0+cu121",
+            "torchaudio": "2.1.0+cu121"
+        },
+        "fix": "# For CUDA 11.8:\npip install torch==2.0.0+cu118 torchvision==0.15.0+cu118 torchaudio==2.0.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html\n\n# For CUDA 12.1:\npip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html"
+    },
+    {
+        "id": "flash-attention-cuda-requirements",
+        "packages": ["flash-attn", "torch"],
+        "description": "Flash Attention requires specific CUDA (11.6+) and PyTorch versions. Common when fine-tuning LLMs.",
+        "severity": "critical",
+        "working_versions": {
+            "flash-attn": "2.3.3",
+            "torch": ">=2.0.0"
+        },
+        "fix": "pip install flash-attn==2.3.3 torch>=2.0.0 --no-build-isolation"
+    },
+    {
+        "id": "xformers-torch-cuda-alignment",
+        "packages": ["xformers", "torch"],
+        "description": "xFormers must match PyTorch CUDA version exactly for memory-efficient attention",
+        "severity": "high",
+        "working_versions": {
+            "xformers": "0.0.22",
+            "torch": "2.0.0+cu118"
+        },
+        "alternative": {
+            "xformers": "0.0.23",
+            "torch": "2.1.0+cu121"
+        },
+        "fix": "pip install xformers==0.0.22 torch==2.0.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html"
+    },
+    {
+        "id": "trl-peft-transformers-alignment",
+        "packages": ["trl", "peft", "transformers"],
+        "description": "TRL (Transformer Reinforcement Learning) requires specific PEFT and Transformers versions for RLHF training",
+        "severity": "high",
+        "working_versions": {
+            "trl": "0.7.4",
+            "peft": "0.6.0",
+            "transformers": "4.35.0"
+        },
+        "alternative": {
+            "trl": ">=0.8.0",
+            "peft": ">=0.7.0",
+            "transformers": ">=4.36.0"
+        },
+        "fix": "pip install trl==0.7.4 peft==0.6.0 transformers==4.35.0\nOR upgrade all:\npip install trl>=0.8.0 peft>=0.7.0 transformers>=4.36.0"
+    },
+    {
+        "id": "bitsandbytes-cuda-requirement",
+        "packages": ["bitsandbytes", "torch"],
+        "description": "BitsAndBytes (quantization) requires CUDA-enabled PyTorch. CPU-only torch breaks 8-bit/4-bit loading.",
+        "severity": "critical",
+        "working_versions": {
+            "bitsandbytes": "0.41.1",
+            "torch": "2.0.0+cu118"
+        },
+        "fix": "pip install bitsandbytes==0.41.1 torch==2.0.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html"
+    },
+    {
+        "id": "langchain-v1-classic-mixing",
+        "packages": ["langchain", "langchain-core"],
+        "description": "Mixing LangChain classic (0.0.x) with v1 (0.1.x+) causes import errors and namespace conflicts",
+        "severity": "critical",
+        "working_versions": {
+            "langchain": "0.0.354",
+            "openai": "0.28.1"
+        },
+        "alternative": {
+            "langchain": ">=0.1.0",
+            "langchain-core": ">=0.1.0",
+            "langchain-openai": ">=0.1.0",
+            "openai": ">=1.0.0"
+        },
+        "fix": "# Classic (stable):\npip install langchain==0.0.354 openai==0.28.1\n\n# V1 (modern - RECOMMENDED):\npip install langchain>=0.1.0 langchain-core>=0.1.0 langchain-openai>=0.1.0 openai>=1.0.0"
+    },
+    {
+        "id": "langchain-deprecated-integrations",
+        "packages": ["langchain", "langchain-community"],
+        "description": "LangChain moved integrations to separate packages. Old imports break with v0.2+",
+        "severity": "medium",
+        "working_versions": {
+            "langchain": ">=0.2.0",
+            "langchain-community": ">=0.2.0",
+            "langchain-openai": ">=0.1.0"
+        },
+        "fix": "pip install langchain>=0.2.0 langchain-community>=0.2.0 langchain-openai>=0.1.0\n\n# Update imports:\n# OLD: from langchain.llms import OpenAI\n# NEW: from langchain_openai import OpenAI"
     }
 ]
 

@@ -1,8 +1,9 @@
 """
 CLI interface for aidep.
-Main commands: check, suggest, validate
+Main commands: check, suggest, validate, doctor, explain, config
 """
 
+import sys
 import click
 from rich.console import Console
 from rich.table import Table
@@ -18,11 +19,11 @@ console = Console()
 
 
 @click.group()
-@click.version_option(version="0.1.0")
+@click.version_option(version="0.2.0")
 def main():
     """
     🔧 aidep - AI Dependency Doctor
-    
+
     Detect and fix AI framework dependency conflicts in seconds.
     """
     pass
@@ -114,6 +115,10 @@ def check(path, verbose):
             # Show fix
             console.print(f"\n[bold green]💡 Suggested fix:[/bold green]")
             console.print(Panel(conflict['fix'], border_style="green"))
+
+            # Show helpful tip if available
+            if 'helpful_tip' in conflict:
+                console.print(f"\n[cyan]{conflict['helpful_tip']}[/cyan]")
         
         # Summary
         console.print("\n[bold cyan]📝 Next Steps:[/bold cyan]")
@@ -184,55 +189,224 @@ def suggest(package):
 
 @main.command()
 @click.argument('file', type=click.Path(exists=True))
-def validate(file):
+@click.option('--json', 'output_json', is_flag=True, help='Output as JSON for CI/CD integration')
+def validate(file, output_json):
     """
     ✅ Validate a requirements file for conflicts.
-    
+
     Example: aidep validate requirements.txt
+    Example (CI/CD): aidep validate requirements.txt --json
     """
-    console.print(f"\n[bold cyan]✅ Validating: {file}[/bold cyan]\n")
-    
     file_path = Path(file)
     scanner = DependencyScanner(file_path.parent)
-    
+
     if file_path.name.endswith('.toml'):
         dependencies = scanner.parse_pyproject_toml(file_path)
     else:
         dependencies = scanner.parse_requirements_txt(file_path)
-    
+
     if not dependencies:
-        console.print("[yellow]⚠️  No dependencies found in file[/yellow]")
+        if output_json:
+            import json
+            print(json.dumps({"valid": True, "conflicts": [], "message": "No dependencies found"}))
+        else:
+            console.print(f"\n[bold cyan]✅ Validating: {file}[/bold cyan]\n")
+            console.print("[yellow]⚠️  No dependencies found in file[/yellow]")
         return
-    
+
     ai_deps = scanner.filter_ai_frameworks(dependencies)
-    
+
     if not ai_deps:
-        console.print("[green]✓ No AI framework dependencies to validate[/green]")
+        if output_json:
+            import json
+            print(json.dumps({"valid": True, "conflicts": [], "message": "No AI frameworks"}))
+        else:
+            console.print(f"\n[bold cyan]✅ Validating: {file}[/bold cyan]\n")
+            console.print("[green]✓ No AI framework dependencies to validate[/green]")
         return
-    
-    console.print(f"[cyan]Found {len(ai_deps)} AI framework dependencies[/cyan]\n")
-    
+
     checker = ConflictChecker(ai_deps)
     conflicts = checker.check_all()
-    
-    if not conflicts:
-        console.print(Panel(
-            "[bold green]✅ Validation passed![/bold green]\n\n"
-            "No known conflicts detected in this requirements file.",
-            title="✅ Valid",
-            border_style="green"
-        ))
+
+    if output_json:
+        import json
+        result = {
+            "valid": len(conflicts) == 0,
+            "file": str(file),
+            "conflicts_count": len(conflicts),
+            "conflicts": [
+                {
+                    "id": c['id'],
+                    "severity": c['severity'],
+                    "description": c['description'],
+                    "affected_packages": c['affected_packages'],
+                    "fix": c['fix'],
+                    "helpful_tip": c.get('helpful_tip', '')
+                }
+                for c in conflicts
+            ]
+        }
+        print(json.dumps(result, indent=2))
     else:
-        console.print(Panel(
-            f"[bold red]❌ Validation failed![/bold red]\n\n"
-            f"Found {len(conflicts)} potential conflict(s).",
-            title="❌ Invalid",
-            border_style="red"
-        ))
-        
-        for conflict in conflicts:
-            console.print(f"\n[red]• {conflict['description']}[/red]")
-    
+        console.print(f"\n[bold cyan]✅ Validating: {file}[/bold cyan]\n")
+        console.print(f"[cyan]Found {len(ai_deps)} AI framework dependencies[/cyan]\n")
+
+        if not conflicts:
+            console.print(Panel(
+                "[bold green]✅ Validation passed![/bold green]\n\n"
+                "No known conflicts detected in this requirements file.",
+                title="✅ Valid",
+                border_style="green"
+            ))
+        else:
+            console.print(Panel(
+                f"[bold red]❌ Validation failed![/bold red]\n\n"
+                f"Found {len(conflicts)} potential conflict(s).",
+                title="❌ Invalid",
+                border_style="red"
+            ))
+
+            for conflict in conflicts:
+                console.print(f"\n[red]• {conflict['description']}[/red]")
+                if 'helpful_tip' in conflict:
+                    console.print(f"  [cyan]{conflict['helpful_tip']}[/cyan]")
+
+        console.print()
+
+    # Exit with error code for CI/CD
+    if conflicts:
+        sys.exit(1)
+
+
+@main.command()
+def doctor():
+    """
+    🏥 Run health check on your AI development environment.
+
+    Checks Python version, installed packages, and common issues.
+    """
+    import platform
+    import importlib.metadata
+
+    console.print("\n[bold cyan]🏥 AI Development Environment Check[/bold cyan]\n")
+
+    # Python version check
+    py_version = sys.version_info
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("Check", style="cyan", width=30)
+    table.add_column("Status", style="green", width=15)
+    table.add_column("Details", style="white", width=40)
+
+    # Python version
+    if py_version >= (3, 8):
+        table.add_row("Python Version", "✅ OK", f"{py_version.major}.{py_version.minor}.{py_version.micro}")
+    else:
+        table.add_row("Python Version", "❌ OLD", f"{py_version.major}.{py_version.minor}.{py_version.micro} (need 3.8+)")
+
+    # Platform
+    table.add_row("Platform", "ℹ️  INFO", platform.system())
+
+    # Check for common packages
+    packages_to_check = ['torch', 'transformers', 'langchain', 'llama-index', 'openai', 'pydantic']
+
+    for pkg in packages_to_check:
+        try:
+            version = importlib.metadata.version(pkg)
+            table.add_row(pkg, "✅ Installed", version)
+        except Exception:
+            table.add_row(pkg, "❌ Missing", "Not installed")
+
+    console.print(table)
+    console.print("\n[cyan]💡 Tip: Run 'aidep check' to scan for conflicts[/cyan]\n")
+
+
+@main.command()
+@click.argument('conflict_id')
+def explain(conflict_id):
+    """
+    📖 Get detailed explanation of a specific conflict.
+
+    Example: aidep explain langchain-openai-separate-package
+    """
+    console.print(f"\n[bold cyan]📖 Conflict Explanation: {conflict_id}[/bold cyan]\n")
+
+    # Find conflict
+    conflict = None
+    for c in CONFLICTS:
+        if c['id'] == conflict_id:
+            conflict = c
+            break
+
+    if not conflict:
+        console.print(f"[red]❌ Conflict '{conflict_id}' not found[/red]")
+        console.print("\n[cyan]💡 Run 'aidep list-conflicts' to see all conflicts[/cyan]\n")
+        return
+
+    # Display detailed info
+    console.print(Panel(
+        f"[bold]{conflict['description']}[/bold]",
+        title=f"🔍 {conflict['id']}",
+        border_style="cyan"
+    ))
+
+    console.print(f"\n[yellow]Severity:[/yellow] {conflict['severity'].upper()}")
+    console.print(f"\n[yellow]Affected Packages:[/yellow]")
+    for pkg in conflict['packages']:
+        console.print(f"  • {pkg}")
+
+    if 'working_versions' in conflict:
+        console.print(f"\n[green]Working Versions:[/green]")
+        for pkg, ver in conflict['working_versions'].items():
+            console.print(f"  • {pkg}: {ver}")
+
+    if 'alternative' in conflict:
+        console.print(f"\n[green]Alternative (Modern) Versions:[/green]")
+        for pkg, ver in conflict['alternative'].items():
+            console.print(f"  • {pkg}: {ver}")
+
+    console.print(f"\n[bold green]💡 How to Fix:[/bold green]")
+    console.print(Panel(conflict['fix'], border_style="green"))
+    console.print()
+
+
+@main.group()
+def config():
+    """⚙️  Manage aidep configuration."""
+    pass
+
+
+@config.command(name='set')
+@click.argument('key')
+@click.argument('value')
+def config_set(key, value):
+    """Set a configuration value."""
+    from .config import Config
+    cfg = Config()
+
+    # Parse boolean strings
+    if value.lower() in ('true', 'false'):
+        value = value.lower() == 'true'
+
+    cfg.set(key, value)
+    console.print(f"[green]✓ Set {key} = {value}[/green]")
+
+
+@config.command(name='show')
+def config_show():
+    """Show current configuration."""
+    from .config import Config
+    cfg = Config()
+
+    console.print("\n[bold cyan]⚙️  Current Configuration[/bold cyan]\n")
+
+    table = Table(show_header=True, header_style="bold magenta")
+    table.add_column("Setting", style="cyan")
+    table.add_column("Value", style="green")
+
+    for key, value in cfg.config.items():
+        table.add_row(key, str(value))
+
+    console.print(table)
     console.print()
 
 
@@ -243,13 +417,13 @@ def list_conflicts():
     """
     console.print("\n[bold cyan]📋 Known AI Framework Conflicts Database[/bold cyan]\n")
     console.print(f"Total conflicts tracked: {len(CONFLICTS)}\n")
-    
+
     for i, conflict in enumerate(CONFLICTS, 1):
         packages = ", ".join(conflict['packages'])
         console.print(f"[bold]{i}. {packages}[/bold]")
         console.print(f"   [yellow]Severity:[/yellow] {conflict['severity']}")
         console.print(f"   {conflict['description']}\n")
-    
+
     console.print("[cyan]💡 Run 'aidep check' to scan your project against these conflicts[/cyan]\n")
 
 

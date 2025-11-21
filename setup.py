@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="aidep",
-    version="0.1.1",
+    version="0.2.0",
     author="RenierB-dev",
     author_email="",
     description="AI Dependency Doctor - Detect and fix AI framework conflicts",
