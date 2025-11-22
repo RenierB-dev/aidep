@@ -40,21 +40,21 @@ class ConflictChecker:
     def _evaluate_conflict(self, conflict: Dict) -> Dict:
         """Evaluate if this conflict applies to current versions."""
         affected_packages = {}
-        
+
         for pkg_name in conflict['packages']:
             pkg_lower = pkg_name.lower()
             if pkg_lower in self.dependencies:
                 affected_packages[pkg_name] = self.dependencies[pkg_lower]
-        
+
         # Check if versions fall into conflict range
         is_conflicting = self._check_if_conflicting(
             affected_packages,
             conflict.get('working_versions', {}),
             conflict.get('alternative', {})
         )
-        
+
         if is_conflicting:
-            return {
+            result = {
                 'id': conflict['id'],
                 'description': conflict['description'],
                 'severity': conflict['severity'],
@@ -63,7 +63,38 @@ class ConflictChecker:
                 'alternative': conflict.get('alternative', {}),
                 'fix': conflict['fix']
             }
-        
+
+            # Add helpful context based on conflict type
+            helpful_tip = self._get_helpful_tip(conflict['id'])
+            if helpful_tip:
+                result['helpful_tip'] = helpful_tip
+
+            return result
+
+        return None
+
+    def _get_helpful_tip(self, conflict_id: str) -> str:
+        """Get helpful tip based on conflict type."""
+        if 'cuda' in conflict_id.lower() or 'torch' in conflict_id.lower():
+            return "💡 Tip: Check your CUDA version with 'nvidia-smi' before installing PyTorch"
+        elif 'langchain' in conflict_id.lower():
+            return "💡 Tip: LangChain v1 (0.1+) is recommended for new projects. Use 'aidep explain " + conflict_id + "' for details"
+        elif 'transformers' in conflict_id.lower() or 'trl' in conflict_id.lower() or 'peft' in conflict_id.lower():
+            return "💡 Tip: When fine-tuning models, lock all training package versions in requirements.txt"
+        elif 'flash' in conflict_id.lower() or 'xformers' in conflict_id.lower():
+            return "💡 Tip: These packages need exact CUDA version matching with PyTorch"
+        elif 'bitsandbytes' in conflict_id.lower():
+            return "💡 Tip: BitsAndBytes requires CUDA. Install CUDA-enabled PyTorch first"
+        return ""
+
+    def _extract_cuda_version(self, spec: str) -> str:
+        """
+        Extract CUDA version from PyTorch spec.
+        Examples: "2.0.0+cu118" -> "cu118", "torch>=2.0.0" -> None
+        """
+        cuda_match = re.search(r'\+cu(\d+)', spec)
+        if cuda_match:
+            return f"cu{cuda_match.group(1)}"
         return None
     
     def _check_if_conflicting(self, current: Dict[str, str], 
@@ -82,13 +113,13 @@ class ConflictChecker:
         for pkg, spec in current.items():
             pkg_lower = pkg.lower()
             
-            # Extract version number if present
-            version_match = re.search(r'(\d+\.\d+\.\d+|\d+\.\d+)', spec)
+            # Extract version number if present (including alpha/beta/rc)
+            version_match = re.search(r'(\d+\.\d+\.\d+(?:[a-zA-Z]+\d*)?|\d+\.\d+)', spec)
             if not version_match:
                 # No specific version pinned, might be okay
                 continue
-            
-            current_version = version_match.group(1)
+
+            current_version = self._normalize_version(version_match.group(1))
             
             # Check against working versions
             if pkg_lower in working:
@@ -104,23 +135,62 @@ class ConflictChecker:
         
         return False
     
+    def _normalize_version(self, version: str) -> str:
+        """
+        Normalize version string to handle alpha/beta/rc versions.
+        Examples: 2.0.0rc1 -> 2.0.0-rc1, 1.5a1 -> 1.5.0-alpha1
+        """
+        # Handle short versions with suffixes (1.5a1 -> 1.5.0a1)
+        short_with_suffix = re.match(r'^(\d+\.\d+)([a-zA-Z]+\d*)$', version)
+        if short_with_suffix:
+            base, suffix = short_with_suffix.groups()
+            version = f"{base}.0{suffix}"
+
+        # Handle short versions (1.5 -> 1.5.0)
+        if re.match(r'^\d+\.\d+$', version):
+            version = version + '.0'
+
+        # Handle alpha/beta/rc suffixes
+        # Match patterns like: 2.0.0rc1, 1.5.0a1, 3.0.0beta2
+        match = re.match(r'^(\d+\.\d+\.\d+)([a-zA-Z]+)(\d*)$', version)
+        if match:
+            base, suffix, num = match.groups()
+            # Normalize suffix to lowercase
+            suffix_map = {
+                'a': 'alpha', 'alpha': 'alpha',
+                'b': 'beta', 'beta': 'beta',
+                'rc': 'rc', 'c': 'rc',
+            }
+            normalized_suffix = suffix_map.get(suffix.lower(), suffix.lower())
+            version = f"{base}-{normalized_suffix}{num}"
+
+        return version
+
     def _version_satisfies(self, version: str, spec: str) -> bool:
         """Check if version satisfies specification."""
         try:
+            version = self._normalize_version(version)
+
             # Handle exact version
             if '==' in spec:
-                spec_version = spec.replace('==', '').strip()
+                spec_version = self._normalize_version(spec.replace('==', '').strip())
                 return version == spec_version
-            
-            # Handle version ranges
+
+            # Handle version ranges using packaging library
             if '>=' in spec or '<' in spec or '>' in spec or '<=' in spec:
-                spec_set = SpecifierSet(spec)
-                return version in spec_set
-            
+                try:
+                    spec_set = SpecifierSet(spec)
+                    # Try with and without normalization
+                    version_obj = parse_version(version)
+                    return version_obj in spec_set
+                except Exception:
+                    # Fallback to string comparison
+                    return True
+
             # Handle x.x.x format
             if re.match(r'^\d+\.\d+', spec):
                 return version.startswith(spec.split('.')[0])
-            
+
             return True
         except Exception:
             return True

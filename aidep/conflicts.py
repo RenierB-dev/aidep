@@ -147,6 +147,237 @@ CONFLICTS = [
             "llama-index": "0.7.4"
         },
         "fix": "pip install langflow==0.5.0 'llama-index<0.7.5'"
+    },
+    {
+        "id": "transformers-torch-version",
+        "packages": ["transformers", "torch"],
+        "description": "Transformers 4.35+ requires PyTorch 2.0+, conflicts with older torch versions",
+        "severity": "high",
+        "working_versions": {
+            "transformers": "4.34.1",
+            "torch": "1.13.1"
+        },
+        "alternative": {
+            "transformers": ">=4.35.0",
+            "torch": ">=2.0.0"
+        },
+        "fix": "pip install transformers==4.34.1 torch==1.13.1\nOR upgrade both:\npip install transformers>=4.35.0 torch>=2.0.0"
+    },
+    {
+        "id": "chromadb-sqlite-version",
+        "packages": ["chromadb", "pysqlite3-binary"],
+        "description": "ChromaDB 0.4.0+ requires pysqlite3-binary on Linux, conflicts with system SQLite",
+        "severity": "medium",
+        "working_versions": {
+            "chromadb": ">=0.4.0",
+            "pysqlite3-binary": ">=0.5.0"
+        },
+        "fix": "pip install chromadb>=0.4.0 pysqlite3-binary>=0.5.0"
+    },
+    {
+        "id": "torch-cuda-version",
+        "packages": ["torch", "torchvision"],
+        "description": "PyTorch CUDA versions must match between torch and torchvision",
+        "severity": "critical",
+        "working_versions": {
+            "torch": "2.0.0+cu118",
+            "torchvision": "0.15.0+cu118"
+        },
+        "fix": "pip install torch==2.0.0+cu118 torchvision==0.15.0+cu118 --index-url https://download.pytorch.org/whl/cu118"
+    },
+    {
+        "id": "fastapi-pydantic-v2",
+        "packages": ["fastapi", "pydantic"],
+        "description": "FastAPI <0.100 incompatible with Pydantic V2 (2.0+)",
+        "severity": "high",
+        "working_versions": {
+            "fastapi": "0.95.2",
+            "pydantic": "1.10.13"
+        },
+        "alternative": {
+            "fastapi": ">=0.100.0",
+            "pydantic": ">=2.0.0"
+        },
+        "fix": "pip install fastapi==0.95.2 pydantic==1.10.13\nOR upgrade both:\npip install fastapi>=0.100.0 pydantic>=2.0.0"
+    },
+    {
+        "id": "pinecone-grpc-version",
+        "packages": ["pinecone-client", "grpcio"],
+        "description": "Pinecone client 2.x requires grpcio <1.60, conflicts with newer gRPC versions",
+        "severity": "medium",
+        "working_versions": {
+            "pinecone-client": ">=2.0.0,<3.0.0",
+            "grpcio": ">=1.50.0,<1.60.0"
+        },
+        "alternative": {
+            "pinecone-client": ">=3.0.0",
+            "grpcio": ">=1.60.0"
+        },
+        "fix": "pip install 'pinecone-client>=2.0.0,<3.0.0' 'grpcio>=1.50.0,<1.60.0'\nOR upgrade both:\npip install pinecone-client>=3.0.0 grpcio>=1.60.0"
+    },
+    {
+        "id": "sentence-transformers-torch",
+        "packages": ["sentence-transformers", "torch"],
+        "description": "Sentence-Transformers 2.3+ requires PyTorch 1.11+, incompatible with older versions",
+        "severity": "medium",
+        "working_versions": {
+            "sentence-transformers": ">=2.3.0",
+            "torch": ">=1.11.0"
+        },
+        "fix": "pip install sentence-transformers>=2.3.0 torch>=1.11.0"
+    },
+    {
+        "id": "haystack-transformers-version",
+        "packages": ["farm-haystack", "transformers"],
+        "description": "Haystack 1.x pins specific transformers versions, conflicts with newer releases",
+        "severity": "high",
+        "working_versions": {
+            "farm-haystack": "1.22.0",
+            "transformers": ">=4.34.0,<4.37.0"
+        },
+        "alternative": {
+            "farm-haystack": ">=2.0.0",
+            "transformers": ">=4.37.0"
+        },
+        "fix": "pip install farm-haystack==1.22.0 'transformers>=4.34.0,<4.37.0'\nOR upgrade both:\npip install farm-haystack>=2.0.0 transformers>=4.37.0"
+    },
+    {
+        "id": "autogen-openai-version",
+        "packages": ["pyautogen", "openai"],
+        "description": "AutoGen <0.2.0 incompatible with OpenAI SDK 1.0+",
+        "severity": "high",
+        "working_versions": {
+            "pyautogen": "0.1.14",
+            "openai": "0.28.1"
+        },
+        "alternative": {
+            "pyautogen": ">=0.2.0",
+            "openai": ">=1.0.0"
+        },
+        "fix": "pip install pyautogen==0.1.14 openai==0.28.1\nOR upgrade both:\npip install pyautogen>=0.2.0 openai>=1.0.0"
+    },
+    {
+        "id": "guidance-transformers-conflict",
+        "packages": ["guidance", "transformers"],
+        "description": "Microsoft Guidance 0.0.x has issues with transformers 4.35+ tokenizer changes",
+        "severity": "medium",
+        "working_versions": {
+            "guidance": ">=0.1.0",
+            "transformers": ">=4.35.0"
+        },
+        "fix": "pip install guidance>=0.1.0 transformers>=4.35.0"
+    },
+    {
+        "id": "weaviate-grpc-protobuf",
+        "packages": ["weaviate-client", "grpcio", "protobuf"],
+        "description": "Weaviate client 3.x requires specific gRPC and protobuf versions",
+        "severity": "medium",
+        "working_versions": {
+            "weaviate-client": ">=3.0.0",
+            "grpcio": ">=1.50.0",
+            "protobuf": ">=3.20.0,<5.0.0"
+        },
+        "fix": "pip install weaviate-client>=3.0.0 'grpcio>=1.50.0' 'protobuf>=3.20.0,<5.0.0'"
+    },
+    {
+        "id": "cuda-pytorch-version-alignment",
+        "packages": ["torch", "torchvision", "torchaudio"],
+        "description": "CUDA toolkit version must match PyTorch CUDA version. Mismatched versions cause runtime errors and model loading failures.",
+        "severity": "critical",
+        "working_versions": {
+            "torch": "2.0.0+cu118",
+            "torchvision": "0.15.0+cu118",
+            "torchaudio": "2.0.0+cu118"
+        },
+        "alternative": {
+            "torch": "2.1.0+cu121",
+            "torchvision": "0.16.0+cu121",
+            "torchaudio": "2.1.0+cu121"
+        },
+        "fix": "# For CUDA 11.8:\npip install torch==2.0.0+cu118 torchvision==0.15.0+cu118 torchaudio==2.0.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html\n\n# For CUDA 12.1:\npip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html"
+    },
+    {
+        "id": "flash-attention-cuda-requirements",
+        "packages": ["flash-attn", "torch"],
+        "description": "Flash Attention requires specific CUDA (11.6+) and PyTorch versions. Common when fine-tuning LLMs.",
+        "severity": "critical",
+        "working_versions": {
+            "flash-attn": "2.3.3",
+            "torch": ">=2.0.0"
+        },
+        "fix": "pip install flash-attn==2.3.3 torch>=2.0.0 --no-build-isolation"
+    },
+    {
+        "id": "xformers-torch-cuda-alignment",
+        "packages": ["xformers", "torch"],
+        "description": "xFormers must match PyTorch CUDA version exactly for memory-efficient attention",
+        "severity": "high",
+        "working_versions": {
+            "xformers": "0.0.22",
+            "torch": "2.0.0+cu118"
+        },
+        "alternative": {
+            "xformers": "0.0.23",
+            "torch": "2.1.0+cu121"
+        },
+        "fix": "pip install xformers==0.0.22 torch==2.0.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html"
+    },
+    {
+        "id": "trl-peft-transformers-alignment",
+        "packages": ["trl", "peft", "transformers"],
+        "description": "TRL (Transformer Reinforcement Learning) requires specific PEFT and Transformers versions for RLHF training",
+        "severity": "high",
+        "working_versions": {
+            "trl": "0.7.4",
+            "peft": "0.6.0",
+            "transformers": "4.35.0"
+        },
+        "alternative": {
+            "trl": ">=0.8.0",
+            "peft": ">=0.7.0",
+            "transformers": ">=4.36.0"
+        },
+        "fix": "pip install trl==0.7.4 peft==0.6.0 transformers==4.35.0\nOR upgrade all:\npip install trl>=0.8.0 peft>=0.7.0 transformers>=4.36.0"
+    },
+    {
+        "id": "bitsandbytes-cuda-requirement",
+        "packages": ["bitsandbytes", "torch"],
+        "description": "BitsAndBytes (quantization) requires CUDA-enabled PyTorch. CPU-only torch breaks 8-bit/4-bit loading.",
+        "severity": "critical",
+        "working_versions": {
+            "bitsandbytes": "0.41.1",
+            "torch": "2.0.0+cu118"
+        },
+        "fix": "pip install bitsandbytes==0.41.1 torch==2.0.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html"
+    },
+    {
+        "id": "langchain-v1-classic-mixing",
+        "packages": ["langchain", "langchain-core"],
+        "description": "Mixing LangChain classic (0.0.x) with v1 (0.1.x+) causes import errors and namespace conflicts",
+        "severity": "critical",
+        "working_versions": {
+            "langchain": "0.0.354",
+            "openai": "0.28.1"
+        },
+        "alternative": {
+            "langchain": ">=0.1.0",
+            "langchain-core": ">=0.1.0",
+            "langchain-openai": ">=0.1.0",
+            "openai": ">=1.0.0"
+        },
+        "fix": "# Classic (stable):\npip install langchain==0.0.354 openai==0.28.1\n\n# V1 (modern - RECOMMENDED):\npip install langchain>=0.1.0 langchain-core>=0.1.0 langchain-openai>=0.1.0 openai>=1.0.0"
+    },
+    {
+        "id": "langchain-deprecated-integrations",
+        "packages": ["langchain", "langchain-community"],
+        "description": "LangChain moved integrations to separate packages. Old imports break with v0.2+",
+        "severity": "medium",
+        "working_versions": {
+            "langchain": ">=0.2.0",
+            "langchain-community": ">=0.2.0",
+            "langchain-openai": ">=0.1.0"
+        },
+        "fix": "pip install langchain>=0.2.0 langchain-community>=0.2.0 langchain-openai>=0.1.0\n\n# Update imports:\n# OLD: from langchain.llms import OpenAI\n# NEW: from langchain_openai import OpenAI"
     }
 ]
 
